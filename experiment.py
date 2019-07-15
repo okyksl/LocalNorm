@@ -80,10 +80,24 @@ class Experiment:
         hist_batch = model_batch.fit(x=train_x, y=train_y, batch_size=batch_size, epochs=epochs, validation_data=val_data, callbacks=[checkpoint_batch])
         hist_local = model_local.fit(x=train_x, y=train_y, batch_size=batch_size, epochs=epochs, validation_data=val_data, callbacks=[checkpoint_local])
         
+        # Save Models
+        with open( os.path.join(self.directory, 'model-batch.json'), 'w') as f:
+            f.write(model_batch.to_json())
+        with open( os.path.join(self.directory, 'model-local.json'), 'w') as f:
+            f.write(model_local.to_json())
+        
         # Results
         self.conf['results']['batch']['train'] = hist_batch
         self.conf['results']['local']['train'] = hist_local
         self.conf['status'] = 'test'
+        self.conf['model']['weights'] = {
+            'batch': os.path.join(self.directory, 'weights-batch.h5'),
+            'local': os.path.join(self.directory, 'weights-local.h5')
+        }
+        self.conf['model']['path'] = {
+            'batch': os.path.join(self.directory, 'model-batch.json')
+            'local': os.path.join(self.directory, 'model-local.json')
+        }
        
     # Executes an experiment stated in configuration file
     def execute(self, experiment=None):

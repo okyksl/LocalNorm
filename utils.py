@@ -13,7 +13,7 @@ def init_models(model_conf, dataset_conf):
         model_batch = model_from_json(model_conf['path']['batch'])
         model_local = model_from_json(model_conf['path']['local'])
         
-        if 'weight' in model_conf:
+        if 'weights' in model_conf:
             model_batch.load_weights(model_conf['weights']['batch'])
             model_local.load_weights(model_conf['weights']['local'])
         return model_batch, model_local
