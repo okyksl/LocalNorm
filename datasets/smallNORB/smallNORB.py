@@ -56,14 +56,14 @@ class smallNORB:
         x_values, y_values = [], []
         for toy_set in dataset:
             for sample in toy_set:
-                if sample.elevation not in conf['elevation']:
+                if 'elevation' in conf and sample.elevation not in conf['elevation']:
                     continue
-                if sample.azimuth not in conf['azimuth']:
+                if 'azimuth' in conf and sample.azimuth not in conf['azimuth']:
                     continue
-                if sample.lighting not in conf['lighting']:
+                if 'lighting' in conf and sample.lighting not in conf['lighting']:
                     continue
                 
-                if sample.category in conf['categories']:
+                if 'categories' in conf and sample.category in conf['categories']:
                     if sample.elevation not in conf.categories[sample.category]['elevation']:
                         continue
                     if sample.azimuth not in conf.categories[sample.category]['azimuth']:

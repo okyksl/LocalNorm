@@ -1,0 +1,64 @@
+{
+    "name": "Lighting Generalization Test",
+    "status": "train",
+    "dataset": {
+        "name": "smallNORB",
+        "input_shape": [96, 96, 1],
+        "nb_classes": 5
+    },
+    "model": {
+        "name": "vgg",
+        "batch_size": 128,
+        "group_size": 4
+    },
+    "train_conf": {
+        "learning_rate": 0.0001,
+        "epochs": 100,
+        "data_split": {
+            "train": 8,
+            "val": 1,
+            "test": 1
+        },
+        "data_conf": {
+            "ligting": [0,1,2]
+        }
+    },
+    "experiments": {
+        "test": {
+        },
+        "original": {
+            "ligting": [0,1,2]
+        },
+        "original_1": {
+            "ligting": [0]
+        },
+        "original_2": {
+            "ligting": [1]
+        },
+        "original_3": {
+            "ligting": [2]
+        },
+        "novel": {
+            "ligting": [3,4,5]
+        },
+        "novel_1": {
+            "ligting": [3]
+        },
+        "novel_2": {
+            "ligting": [4]
+        },
+        "novel_3": {
+            "ligting": [5]
+        }
+    },
+    "results": {
+        "batch": {
+            "train": {},
+            "test": {}
+        },
+        "local": {
+            "train": {},
+            "test": {}
+        }
+    }
+}

@@ -1,0 +1,73 @@
+{
+    "name": "Elevation Generalization Test",
+    "status": "train",
+    "dataset": {
+        "name": "smallNORB",
+        "input_shape": [96, 96, 1],
+        "nb_classes": 5
+    },
+    "model": {
+        "name": "vgg",
+        "batch_size": 128,
+        "group_size": 4
+    },
+    "train_conf": {
+        "learning_rate": 0.0001,
+        "epochs": 100,
+        "data_split": {
+            "train": 8,
+            "val": 1,
+            "test": 1
+        },
+        "data_conf": {
+            "elevation": [0,1,2,3,4]
+        }
+    },
+    "experiments": {
+        "test": {
+        },
+        "original": {
+            "elevation": [0,1,2,3,4]
+        },
+        "original_1": {
+            "elevation": [0]
+        },
+        "original_2": {
+            "elevation": [1]
+        },
+        "original_3": {
+            "elevation": [2]
+        },
+        "original_4": {
+            "elevation": [3]
+        },
+        "original_5": {
+            "elevation": [4]
+        },
+        "novel": {
+            "elevation": [5,6,7,8]
+        },
+        "novel_1": {
+            "elevation": [5]
+        },
+        "novel_2": {
+            "elevation": [6]
+        },
+        "novel_3": {
+            "elevation": [7],
+        },
+        "novel_4": {
+            "elevation": [8]
+        }
+    },
+    "results": {
+        "batch": {
+            "train": {},
+            "test": {}
+        },
+        "local": {
+            "train": {},
+            "test": {}
+        }
+    }
+}
