@@ -1,10 +1,11 @@
 import os
 import json
 
+from numpy import concatenate
 from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler
 from keras.optimizers import SGD
 
-from utils import init_dataset, init_models
+from utils import init_dataset, init_models, init_attack
 
 class Experiment:
     def __init__(self, path=None):
@@ -31,19 +32,51 @@ class Experiment:
         with open(path, 'w') as f:
             json.dump(self.conf, f)
     
-    # Preprocess dataset
-    def preprocess(self):
-        self.dataset.split(self.conf['train_conf']['data_split'])
-        self.train_data = self.dataset.process('train', self.conf['train_conf']['data_conf'])
-        self.val_data = self.dataset.process('val', self.conf['train_conf']['data_conf'])
+    # Prepare data according to configurations
+    def prepare(self, dataset, data_conf):
+        # Extract params
+        if 'params' in data_conf:
+            data_params = data_conf['params']
+        else:
+            data_params = {}
         
-        # Clip batches
-        batch_size = self.conf['model']['batch_size']
-        train_len = (len(self.train_data[0]) // batch_size) * batch_size
-        val_len = (len(self.val_data[0]) // batch_size) * batch_size
+        # Get data
+        data = self.dataset.process(dataset, data_params)
 
-        self.train_data = ( self.train_data[0][:train_len], self.train_data[1][:train_len] )
-        self.val_data = ( self.val_data[0][:val_len], self.val_data[1][:val_len] )
+        # Clip overflow
+        batch_size = self.conf['model']['batch_size']
+        data_len = (len(data[0]) // batch_size) * batch_size
+        data = ( data[0][:data_len], data[1][:data_len] )
+        
+        # Apply adversarial attack
+        if 'adversarial' in data_conf:
+            adv_conf = data_conf['adversarial']
+            if 'params' in adv_conf:
+                adv_params = adv_conf['params']
+            else:
+                adv_params = {}
+                
+            attack_batch = init_attack(self.models[0], adv_conf['attack'])
+            attack_local = init_attack(self.models[1], adv_conf['attack'])
+
+            data_batch_x = []
+            data_local_x = []
+            for i in range( data_len // batch_size ):
+                batch_x = data[0][i*batch_size:(i+1)*batch_size]
+                data_batch_x.append( attack_batch.generate_np(batch_x, **adv_params) )
+                data_local_x.append( attack_local.generate_np(batch_x, **adv_params) )
+                
+            data_batch_x = concatenate(data_batch_x)
+            data_local_x = concatenate(data_local_x)
+            return (data_batch_x, data[1]), (data_local_x, data[1])
+        else:
+            return data, data
+    
+    # Preprocess before training/evaluating
+    def preprocess(self):
+        # Split dataset
+        data_split = self.conf['train_conf']['data_split']
+        self.dataset.split(data_split)
         
     # Train the model according to configurations
     def train(self):
@@ -57,12 +90,13 @@ class Experiment:
         # Hyperparams
         batch_size = self.conf['model']['batch_size']
         train_conf = self.conf['train_conf']
+        data_conf = train_conf['data_conf']
         epochs = train_conf['epochs']
         learning_rate = train_conf['learning_rate']
         
         # Data
-        train_x, train_y = self.train_data
-        val_data = self.val_data
+        train_batch, train_local = self.prepare('train', data_conf)
+        val_batch, val_local = self.prepare('val', data_conf)
 
         # Checkpoints
         checkpoint_batch = ModelCheckpoint( os.path.join(self.directory, 'weights-batch.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
@@ -77,8 +111,8 @@ class Experiment:
         model_local.compile(loss='categorical_crossentropy', optimizer=optimizer_local, metrics=['accuracy'])
 
         # Train
-        hist_batch = model_batch.fit(x=train_x, y=train_y, batch_size=batch_size, epochs=epochs, validation_data=val_data, callbacks=[checkpoint_batch])
-        hist_local = model_local.fit(x=train_x, y=train_y, batch_size=batch_size, epochs=epochs, validation_data=val_data, callbacks=[checkpoint_local])
+        hist_batch = model_batch.fit(x=train_batch[0], y=train_batch[1], batch_size=batch_size, epochs=epochs, validation_data=val_batch, callbacks=[checkpoint_batch])
+        hist_local = model_local.fit(x=train_local[0], y=train_local[1], batch_size=batch_size, epochs=epochs, validation_data=val_local, callbacks=[checkpoint_local])
         
         # Save Models
         with open( os.path.join(self.directory, 'model-batch.json'), 'w') as f:
@@ -86,10 +120,14 @@ class Experiment:
         with open( os.path.join(self.directory, 'model-local.json'), 'w') as f:
             f.write(model_local.to_json())
         
-        # Results
-        self.conf['results']['batch']['train'] = hist_batch.history
-        self.conf['results']['local']['train'] = hist_local.history
+        # Save Results
         self.conf['status'] = 'test'
+        self.conf['results']['batch'] = {
+            'train': hist_batch.history
+        }
+        self.conf['results']['local'] = {
+            'train': hist_local.history
+        }
         self.conf['model']['weights'] = {
             'batch': os.path.join(self.directory, 'weights-batch.h5'),
             'local': os.path.join(self.directory, 'weights-local.h5')
@@ -100,31 +138,30 @@ class Experiment:
         }
        
     # Executes an experiment stated in configuration file
-    def execute(self, experiment=None):
+    def execute(self, experiment=None, experiment_conf=None):
         # Execute all experiments if nothing is specified
         if experiment is None:
             for exp in self.conf['experiments']:
                 self.execute(exp)
             return
         
+        if experiment_conf is not None:
+            self.conf['experiments'][experiment] = experiment_conf
+        
+        # Hyperparams
+        batch_size = self.conf['model']['batch_size']
+        
         # Data
         experiment_conf = self.conf['experiments'][experiment]
-        test_x, test_y = self.dataset.process('test', experiment_conf)
-
-        # Clip Batches
-        batch_size = self.conf['model']['batch_size']
-        test_len = (len(test_x) // batch_size) * batch_size
-
-        test_x = test_x[:test_len]
-        test_y = test_y[:test_len]
+        test_batch, test_local = self.prepare('test', experiment_conf)
 
         # Models
         model_batch = self.models[0]
         model_local = self.models[1]
 
         # Evaluate
-        result_batch = model_batch.evaluate(x=test_x, y=test_y, batch_size=batch_size)
-        result_local = model_local.evaluate(x=test_x, y=test_y, batch_size=batch_size)
+        result_batch = model_batch.evaluate(x=test_batch[0], y=test_batch[1], batch_size=batch_size)
+        result_local = model_local.evaluate(x=test_local[0], y=test_local[1], batch_size=batch_size)
 
         # Results
         self.conf['results']['batch'][experiment] = result_batch

@@ -20,35 +20,53 @@
             "test": 1
         },
         "data_conf": {
-            "ligting": [0,1,2]
+            "params": {
+                "ligting": [0,1,2]
+            }
         }
     },
     "experiments": {
         "test": {
         },
         "original": {
-            "ligting": [0,1,2]
+            "params": {
+                "ligting": [0,1,2]
+            }
         },
         "original_1": {
-            "ligting": [0]
+            "params": {
+                "ligting": [0]
+            }
         },
         "original_2": {
-            "ligting": [1]
+            "params": {
+                "ligting": [1]
+            }
         },
         "original_3": {
-            "ligting": [2]
+            "params": {
+                "ligting": [2]
+            }
         },
         "novel": {
-            "ligting": [3,4,5]
+            "params": {
+                "ligting": [3,4,5]
+            }
         },
         "novel_1": {
-            "ligting": [3]
+            "params": {
+                "ligting": [3]
+            }
         },
         "novel_2": {
-            "ligting": [4]
+            "params": {
+                "ligting": [4]
+            }
         },
         "novel_3": {
-            "ligting": [5]
+            "params": {
+                "ligting": [5]
+            }
         }
     },
     "results": {

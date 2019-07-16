@@ -20,71 +20,113 @@
             "test": 1
         },
         "data_conf": {
-            "azimuth": [0,2,4,6,8,10,12,14,16]
+            "params": {
+                "azimuth": [0,2,4,6,8,10,12,14,16]
+            }
         }
     },
     "experiments": {
         "test": {
         },
         "original": {
-            "azimuth": [0,2,4,6,8,10,12,14,16]
+            "params": {
+                "azimuth": [0,2,4,6,8,10,12,14,16]
+            }
         },
         "original_1": {
-            "azimuth": [0]
+            "params": {
+                "azimuth": [0]
+            }
         },
         "original_2": {
-            "azimuth": [2]
+            "params": {
+                "azimuth": [2]
+            }
         },
         "original_3": {
-            "azimuth": [4]
+            "params": {
+                "azimuth": [4]
+            }
         },
         "original_4": {
-            "azimuth": [6]
+            "params": {
+                "azimuth": [6]
+            }
         },
         "original_5": {
-            "azimuth": [8]
+            "params": {
+                "azimuth": [8]
+            }
         },
         "original_6": {
-            "azimuth": [10]
+            "params": {
+                "azimuth": [10]
+            }
         },
         "original_7": {
-            "azimuth": [12]
+            "params": {
+                "azimuth": [12]
+            }
         },
         "original_8": {
-            "azimuth": [14]
+            "params": {
+                "azimuth": [14]
+            }
         },
         "original_9": {
-            "azimuth": [16]
+            "params": {
+                "azimuth": [16]
+            }
         },
         "novel": {
-            "azimuth": [18,20,22,24,26,28,30,32,34]
+            "params": {
+                "azimuth": [18,20,22,24,26,28,30,32,34]
+            }
         },
         "novel_1": {
-            "azimuth": [18]
+            "params": {
+                "azimuth": [18]
+            }
         },
         "novel_2": {
-            "azimuth": [20]
+            "params": {
+                "azimuth": [20]
+            }
         },
         "novel_3": {
-            "azimuth": [22]
+            "params": {
+                "azimuth": [22]
+            }
         },
         "novel_4": {
-            "azimuth": [24]
+            "params": {
+                "azimuth": [24]
+            }
         },
         "novel_5": {
-            "azimuth": [26]
+            "params": {
+                "azimuth": [26]
+            }
         },
         "novel_6": {
-            "azimuth": [28]
+            "params": {
+                "azimuth": [28]
+            }
         },
         "novel_7": {
-            "azimuth": [30]
+            "params": {
+                "azimuth": [30]
+            }
         },
         "novel_8": {
-            "azimuth": [32]
+            "params": {
+                "azimuth": [32]
+            }
         },
         "novel_9": {
-            "azimuth": [34]
+            "params": {
+                "azimuth": [34]
+            }
         }
     },
     "results": {

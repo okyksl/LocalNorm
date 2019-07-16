@@ -1,12 +1,16 @@
 import os
 import json
 
+from keras import backend as K
 from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler
 from keras.optimizers import SGD
 from keras.models import model_from_json
 
 from models.vgg import build_vgg
 from datasets.smallNORB import smallNORB
+
+from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.attacks import ProjectedGradientDescent, FastGradientMethod
 
 def init_models(model_conf, dataset_conf):
     if 'path' in model_conf:
@@ -34,4 +38,15 @@ def init_models(model_conf, dataset_conf):
 def init_dataset(dataset_conf):
     if dataset_conf['name'] == 'smallNORB':
         return smallNORB()
+    
     raise('Dataset is not supported')
+    
+def init_attack(model, attack):
+    wrap = KerasModelWrapper(model)
+    sess = K.get_session()
+    if attack == 'pgd':
+        return ProjectedGradientDescent(wrap, sess=sess)
+    elif attack == 'fgm':
+        return FastGradientMethod(wrap, sess=sess)
+    
+    raise('Adversarial attack is not supported')

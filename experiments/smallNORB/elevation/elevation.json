@@ -20,44 +20,68 @@
             "test": 1
         },
         "data_conf": {
-            "elevation": [0,1,2,3,4]
+            "params": {
+                "elevation": [0,1,2,3,4]
+            }
         }
     },
     "experiments": {
         "test": {
         },
         "original": {
-            "elevation": [0,1,2,3,4]
+            "params": {
+                "elevation": [0,1,2,3,4]
+            }
         },
         "original_1": {
-            "elevation": [0]
+            "params": {
+                "elevation": [0]
+            }
         },
         "original_2": {
-            "elevation": [1]
+            "params": {
+                "elevation": [1]
+            }
         },
         "original_3": {
-            "elevation": [2]
+            "params": {
+                "elevation": [2]
+            }
         },
         "original_4": {
-            "elevation": [3]
+            "params": {
+                "elevation": [3]
+            }
         },
         "original_5": {
-            "elevation": [4]
+            "params": {
+                "elevation": [4]
+            }
         },
         "novel": {
-            "elevation": [5,6,7,8]
+            "params": {
+                "elevation": [5,6,7,8]
+            }
         },
         "novel_1": {
-            "elevation": [5]
+            "params": {
+                "elevation": [5]
+            }
         },
         "novel_2": {
-            "elevation": [6]
+            "params": {
+                "elevation": [6]
+            }
         },
         "novel_3": {
-            "elevation": [7],
+            "params": {
+                "elevation": [7]
+            }
         },
         "novel_4": {
-            "elevation": [8]
+            "params": {
+                "elevation": [8]
+            }
         }
     },
     "results": {
