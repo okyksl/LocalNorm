@@ -87,15 +87,15 @@ class Experiment:
             f.write(model_local.to_json())
         
         # Results
-        self.conf['results']['batch']['train'] = hist_batch
-        self.conf['results']['local']['train'] = hist_local
+        self.conf['results']['batch']['train'] = hist_batch.history
+        self.conf['results']['local']['train'] = hist_local.history
         self.conf['status'] = 'test'
         self.conf['model']['weights'] = {
             'batch': os.path.join(self.directory, 'weights-batch.h5'),
             'local': os.path.join(self.directory, 'weights-local.h5')
         }
         self.conf['model']['path'] = {
-            'batch': os.path.join(self.directory, 'model-batch.json')
+            'batch': os.path.join(self.directory, 'model-batch.json'),
             'local': os.path.join(self.directory, 'model-local.json')
         }
        

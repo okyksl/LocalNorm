@@ -76,6 +76,4 @@ class smallNORB:
                 
         x_values = np.asarray(x_values)
         y_values = np.asarray(y_values)
-        np.random.shuffle(x_values)
-        np.random.shuffle(y_values)
         return x_values, y_values

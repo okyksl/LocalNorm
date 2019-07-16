@@ -20,14 +20,14 @@
             "test": 1
         },
         "data_conf": {
-            "azimuth": [0,2,4,6,8,10,12,14,16],
+            "azimuth": [0,2,4,6,8,10,12,14,16]
         }
     },
     "experiments": {
         "test": {
         },
         "original": {
-            "azimuth": [0,2,4,6,8,10,12,14,16], 
+            "azimuth": [0,2,4,6,8,10,12,14,16]
         },
         "original_1": {
             "azimuth": [0]
