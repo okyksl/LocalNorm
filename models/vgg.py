@@ -21,65 +21,78 @@ def build_vgg(name='vgg', input_shape=(96,96,1,), input_layer=None, nb_classes=5
   
     x = Conv2D(64, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(64, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = MaxPooling2D(pool_size=(2, 2))(x)
 
     x = Conv2D(128, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(128, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = MaxPooling2D(pool_size=(2, 2))(x)
 
     x = Conv2D(256, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(256, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(256, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
-
-    x = MaxPooling2D(pool_size=(2, 2))(x)
-
-
-    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
-    x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
-
-    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
-    x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
-
-    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
-    x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = MaxPooling2D(pool_size=(2, 2))(x)
 
 
     x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
     x = Activation('relu')(x)
-    x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+
+
+    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
+    x = Activation('relu')(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+
+    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
+    x = Activation('relu')(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
+
+    x = Conv2D(512, (3, 3), padding='same',kernel_regularizer=l2(weight_decay))(x)
+    x = Activation('relu')(x)
+    if norm_type is not None:
+        x = norm(norm_type, batch_size=batch_size, groupsize=group_size)(x)
 
     x = MaxPooling2D(pool_size=(2, 2))(x)
     x = Dropout(0.5)(x)

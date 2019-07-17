@@ -1,19 +1,31 @@
 {
     "name": "Lighting Generalization Test",
-    "status": "train",
     "dataset": {
         "name": "smallNORB",
         "input_shape": [96, 96, 1],
         "nb_classes": 5
     },
-    "model": {
-        "name": "vgg",
-        "batch_size": 128,
-        "group_size": 4
+    "models": {
+        "batch": {
+            "class": "vgg",
+            "name": "vgg_batch",
+            "batch_size": 128,
+            "group_size": 8,
+            "norm_type": "batch",
+            "eval": [ "batch" ]
+        },
+        "local": {
+            "class": "vgg",
+            "name": "vgg_local",
+            "batch_size": 128,
+            "group_size": 8,
+            "norm_type": "local",
+            "eval": [ "single", "single-voting", "voting", "batch" ]
+        }
     },
     "train_conf": {
         "learning_rate": 0.0001,
-        "epochs": 100,
+        "epochs": 30,
         "data_split": {
             "train": 8,
             "val": 1,
@@ -21,7 +33,7 @@
         },
         "data_conf": {
             "params": {
-                "ligting": [0,1,2]
+                "lighting": [0,1,2]
             }
         }
     },
@@ -30,53 +42,43 @@
         },
         "original": {
             "params": {
-                "ligting": [0,1,2]
+                "lighting": [0,1,2]
             }
         },
         "original_1": {
             "params": {
-                "ligting": [0]
+                "lighting": [0]
             }
         },
         "original_2": {
             "params": {
-                "ligting": [1]
+                "lighting": [1]
             }
         },
         "original_3": {
             "params": {
-                "ligting": [2]
+                "lighting": [2]
             }
         },
         "novel": {
             "params": {
-                "ligting": [3,4,5]
+                "lighting": [3,4,5]
             }
         },
         "novel_1": {
             "params": {
-                "ligting": [3]
+                "lighting": [3]
             }
         },
         "novel_2": {
             "params": {
-                "ligting": [4]
+                "lighting": [4]
             }
         },
         "novel_3": {
             "params": {
-                "ligting": [5]
+                "lighting": [5]
             }
-        }
-    },
-    "results": {
-        "batch": {
-            "train": {},
-            "test": {}
-        },
-        "local": {
-            "train": {},
-            "test": {}
         }
     }
 }

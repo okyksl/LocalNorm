@@ -4,9 +4,7 @@ from experiment import Experiment
 
 def run(path):
     experiment = Experiment(path=path)
-    experiment.preprocess()
-    experiment.train()
-    experiment.execute()
+    experiment.run()
     experiment.save()
 
 if __name__ == '__main__':

@@ -1,11 +1,14 @@
 import os
 import json
 
-from numpy import concatenate
-from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler
+import numpy as np
+import keras.backend as K
+
+from keras.callbacks import ModelCheckpoint, LambdaCallback
 from keras.optimizers import SGD
 
-from utils import init_dataset, init_models, init_attack
+from evaluate import evaluate_model
+from utils import init_dataset, init_model, init_attack
 
 class Experiment:
     def __init__(self, path=None):
@@ -20,9 +23,10 @@ class Experiment:
             self.conf = json.load(f)
             
             self.name = self.conf['name']
-            self.status = self.conf['status']
             self.dataset = init_dataset(self.conf['dataset'])
-            self.models = init_models(self.conf['model'], self.conf['dataset'])
+            self.models = {}
+            for model in self.conf['models']:
+                self.models[model] = init_model(self.conf['models'][model], self.conf['dataset'])
             
     # Save experiment configurations to a directory
     def save(self, path=None):
@@ -33,7 +37,7 @@ class Experiment:
             json.dump(self.conf, f)
     
     # Prepare data according to configurations
-    def prepare(self, dataset, data_conf):
+    def prepare(self, model, dataset, data_conf):
         # Extract params
         if 'params' in data_conf:
             data_params = data_conf['params']
@@ -44,9 +48,14 @@ class Experiment:
         data = self.dataset.process(dataset, data_params)
 
         # Clip overflow
-        batch_size = self.conf['model']['batch_size']
+        batch_size = self.conf['models'][model]['batch_size']
         data_len = (len(data[0]) // batch_size) * batch_size
         data = ( data[0][:data_len], data[1][:data_len] )
+        
+        # Shuffle data
+        indices = np.arange(data_len)
+        np.random.shuffle(indices)
+        data = ( data[0][indices], data[1][indices] )
         
         # Apply adversarial attack
         if 'adversarial' in data_conf:
@@ -56,21 +65,18 @@ class Experiment:
             else:
                 adv_params = {}
                 
-            attack_batch = init_attack(self.models[0], adv_conf['attack'])
-            attack_local = init_attack(self.models[1], adv_conf['attack'])
-
-            data_batch_x = []
-            data_local_x = []
+            attack = init_attack(self.models[model], adv_conf['attack'])
+            
+            # Generate adversarial samples batch by batch
+            data_x = []
             for i in range( data_len // batch_size ):
                 batch_x = data[0][i*batch_size:(i+1)*batch_size]
-                data_batch_x.append( attack_batch.generate_np(batch_x, **adv_params) )
-                data_local_x.append( attack_local.generate_np(batch_x, **adv_params) )
+                data_x.append( attack.generate_np(batch_x, **adv_params) )
                 
-            data_batch_x = concatenate(data_batch_x)
-            data_local_x = concatenate(data_local_x)
-            return (data_batch_x, data[1]), (data_local_x, data[1])
+            data_x = np.concatenate(data_x)
+            return (data_x, data[1])
         else:
-            return data, data
+            return data
     
     # Preprocess before training/evaluating
     def preprocess(self):
@@ -79,90 +85,124 @@ class Experiment:
         self.dataset.split(data_split)
         
     # Train the model according to configurations
-    def train(self):
-        if self.conf['status'] != 'train':
-            raise('The model is already trained.')
+    def train(self, model=None, exec_every_epoch=False):
+        if model is None:
+            for model in self.models:
+                self.train(model=model, exec_every_epoch=exec_every_epoch)
+            return
         
-        # Models
-        model_batch = self.models[0]
-        model_local = self.models[1]
-
         # Hyperparams
-        batch_size = self.conf['model']['batch_size']
         train_conf = self.conf['train_conf']
         data_conf = train_conf['data_conf']
+        
+        batch_size = self.conf['models'][model]['batch_size']
+        group_size = self.conf['models'][model]['group_size']
         epochs = train_conf['epochs']
         learning_rate = train_conf['learning_rate']
         
         # Data
-        train_batch, train_local = self.prepare('train', data_conf)
-        val_batch, val_local = self.prepare('val', data_conf)
+        train_x, train_y = self.prepare(model=model, dataset='train', data_conf=data_conf)        
+        val_data = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
-        # Checkpoints
-        checkpoint_batch = ModelCheckpoint( os.path.join(self.directory, 'weights-batch.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
-        checkpoint_local = ModelCheckpoint( os.path.join(self.directory, 'weights-local.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
-
-        # Optimizers
-        optimizer_batch = SGD(lr=learning_rate, momentum=0.9)
-        optimizer_local = SGD(lr=learning_rate, momentum=0.9)
-
-        # Compile
-        model_batch.compile(loss='categorical_crossentropy', optimizer=optimizer_batch, metrics=['accuracy'])
-        model_local.compile(loss='categorical_crossentropy', optimizer=optimizer_local, metrics=['accuracy'])
-
-        # Train
-        hist_batch = model_batch.fit(x=train_batch[0], y=train_batch[1], batch_size=batch_size, epochs=epochs, validation_data=val_batch, callbacks=[checkpoint_batch])
-        hist_local = model_local.fit(x=train_local[0], y=train_local[1], batch_size=batch_size, epochs=epochs, validation_data=val_local, callbacks=[checkpoint_local])
+        # Checkpoint
+        checkpoint = ModelCheckpoint( os.path.join(self.directory, 'weights-' + model + '.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+        callbacks = [ checkpoint ]
         
-        # Save Models
-        with open( os.path.join(self.directory, 'model-batch.json'), 'w') as f:
-            f.write(model_batch.to_json())
-        with open( os.path.join(self.directory, 'model-local.json'), 'w') as f:
-            f.write(model_local.to_json())
+        # Experiment Callback
+        if exec_every_epoch:
+            experiment_callback = LambdaCallback(
+                on_epoch_end=lambda epoch,logs: self.execute(model=model))
+            callbacks = callbacks + [ experiment_callback ]
+        
+        # Compile
+        optimizer = SGD(lr=learning_rate, momentum=0.9)
+        self.models[model].compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    
+        # Train
+        hist = self.models[model].fit(
+            x=train_x,
+            y=train_y,
+            batch_size=batch_size,
+            epochs=epochs,
+            validation_data=val_data,
+            callbacks=callbacks
+        )
+        
+        # Save Model Def
+        with open( os.path.join(self.directory, 'model-' + model + '.json'), 'w') as f:
+            f.write(self.models[model].to_json())
+            
+        # Save Weight Path
+        self.conf['models'][model]['weights'] = os.path.join(self.directory, 'weights-' + model + '.h5')
+        
+        # Save Model Def Path
+        self.conf['models'][model]['path'] = os.path.join(self.directory, 'model-' + model + '.h5')
         
         # Save Results
-        self.conf['status'] = 'test'
-        self.conf['results']['batch'] = {
-            'train': hist_batch.history
-        }
-        self.conf['results']['local'] = {
-            'train': hist_local.history
-        }
-        self.conf['model']['weights'] = {
-            'batch': os.path.join(self.directory, 'weights-batch.h5'),
-            'local': os.path.join(self.directory, 'weights-local.h5')
-        }
-        self.conf['model']['path'] = {
-            'batch': os.path.join(self.directory, 'model-batch.json'),
-            'local': os.path.join(self.directory, 'model-local.json')
-        }
+        if 'results' not in self.conf:
+            self.conf['results'] = {}
+        if 'train' not in self.conf['results']:
+            self.conf['results']['train'] = {}
+        self.conf['results']['train'][model] = hist.history
        
     # Executes an experiment stated in configuration file
-    def execute(self, experiment=None, experiment_conf=None):
-        # Execute all experiments if nothing is specified
+    def execute(self, model=None, experiment=None, experiment_conf=None):
+        # Execute on all models if model is not specified
+        if model is None:
+            for model in self.models:
+                self.execute(model=model, experiment=experiment, experiment_conf=experiment_conf)
+            return
+
+        # Execute all experiments if experiment is not specified
         if experiment is None:
-            for exp in self.conf['experiments']:
-                self.execute(exp)
+            for experiment in self.conf['experiments']:
+                self.execute(model=model, experiment=experiment)
             return
         
+        # Get experiment config if not specified
         if experiment_conf is not None:
             self.conf['experiments'][experiment] = experiment_conf
+       
+        # Print Experiment Start
+        print('Model %s, Experiment %s is executing...' % (model, experiment))
         
         # Hyperparams
-        batch_size = self.conf['model']['batch_size']
-        
+        batch_size = self.conf['models'][model]['batch_size']
+        group_size = self.conf['models'][model]['group_size']
+
         # Data
-        experiment_conf = self.conf['experiments'][experiment]
-        test_batch, test_local = self.prepare('test', experiment_conf)
-
-        # Models
-        model_batch = self.models[0]
-        model_local = self.models[1]
-
+        experiment_conf = self.conf['experiments'][experiment]        
+        test_data = self.prepare(model=model, dataset='test', data_conf=experiment_conf)
+        
         # Evaluate
-        result_batch = model_batch.evaluate(x=test_batch[0], y=test_batch[1], batch_size=batch_size)
-        result_local = model_local.evaluate(x=test_local[0], y=test_local[1], batch_size=batch_size)
+        eval_types = self.conf['models'][model]['eval']
+        results = {}
+        for eval_type in eval_types:
+            print('Model %s, Experiment %s, Eval %s is executing...' % (model, experiment, eval_type))
+            results[eval_type] = evaluate_model(self.models[model],
+                                                test_data=test_data,
+                                                batch_size=batch_size,
+                                                group_size=group_size,
+                                                eval_type=eval_type)
+            print('Model %s, Experiment %s, Eval %s results: ' % (model, experiment, eval_type))
+            print(results[eval_type])
 
-        # Results
-        self.conf['results']['batch'][experiment] = result_batch
-        self.conf['results']['local'][experiment] = result_local
+        # Save Results
+        if 'results' not in self.conf:
+            self.conf['results'] = {}
+        if experiment not in self.conf['results']:
+            self.conf['results'][experiment] = {}
+        if model not in self.conf['results'][experiment]:
+            self.conf['results'][experiment][model] = {}
+        for res in results:
+            if res not in self.conf['results'][experiment][model]:
+                self.conf['results'][experiment][model][res] = { 'acc': [] }
+            self.conf['results'][experiment][model][res]['acc'].append(float(results[res]))
+        
+        # Print Results
+        print('Model %s, Experiment %s results:' % (model, experiment))
+        print(results)
+        
+    def run(self):
+        self.preprocess()
+        self.train(exec_every_epoch=True)

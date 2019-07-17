@@ -1,15 +1,27 @@
 {
     "name": "Azimuth Generalization Test",
-    "status": "train",
     "dataset": {
         "name": "smallNORB",
         "input_shape": [96, 96, 1],
         "nb_classes": 5
     },
-    "model": {
-        "name": "vgg",
-        "batch_size": 128,
-        "group_size": 4
+    "models": {
+        "batch": {
+            "class": "vgg",
+            "name": "vgg_batch",
+            "batch_size": 128,
+            "group_size": 8,
+            "norm_type": "batch",
+            "eval": [ "batch" ]
+        },
+        "local": {
+            "class": "vgg",
+            "name": "vgg_local",
+            "batch_size": 128,
+            "group_size": 8,
+            "norm_type": "local",
+            "eval": [ "single", "single-voting", "voting", "batch" ]
+        }
     },
     "train_conf": {
         "learning_rate": 0.0001,
@@ -127,16 +139,6 @@
             "params": {
                 "azimuth": [34]
             }
-        }
-    },
-    "results": {
-        "batch": {
-            "train": {},
-            "test": {}
-        },
-        "local": {
-            "train": {},
-            "test": {}
         }
     }
 }

@@ -12,26 +12,23 @@ from datasets.smallNORB import smallNORB
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.attacks import ProjectedGradientDescent, FastGradientMethod
 
-def init_models(model_conf, dataset_conf):
+def init_model(model_conf, dataset_conf):
     if 'path' in model_conf:
-        model_batch = model_from_json(model_conf['path']['batch'])
-        model_local = model_from_json(model_conf['path']['local'])
+        model = model_from_json(model_conf['path'])
         
         if 'weights' in model_conf:
-            model_batch.load_weights(model_conf['weights']['batch'])
-            model_local.load_weights(model_conf['weights']['local'])
-        return model_batch, model_local
-
-    if 'name' in model_conf:
-        if model_conf['name'] == 'vgg':
+            model.load_weights(model_conf['weights'])
+        return model
+    
+    if 'class' in model_conf:
+        if model_conf['class'] == 'vgg':
+            name = dataset_conf['name']
             nb_classes = dataset_conf['nb_classes']
             input_shape = dataset_conf['input_shape']
             batch_size = model_conf['batch_size']
             group_size = model_conf['group_size']
-
-            model_batch = build_vgg(name='batch_vgg', input_shape=input_shape, norm_type='batch', batch_size=batch_size, group_size=group_size, nb_classes=nb_classes)
-            model_local = build_vgg(name='local_vgg', input_shape=input_shape, norm_type='local', batch_size=batch_size, group_size=group_size, nb_classes=nb_classes)
-            return model_batch, model_local
+            norm_type = model_conf['norm_type']
+            return build_vgg(name=name, input_shape=input_shape, norm_type=norm_type, batch_size=batch_size, group_size=group_size, nb_classes=nb_classes)
     
     raise('Model is not supported')
     
