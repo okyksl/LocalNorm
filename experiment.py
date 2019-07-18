@@ -105,7 +105,7 @@ class Experiment:
         val_data = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
         # Checkpoint
-        checkpoint = ModelCheckpoint( os.path.join(self.directory, 'weights-' + model + '.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+        checkpoint = ModelCheckpoint( os.path.join(self.directory, 'weights-' + model + '.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max', period=1)
         callbacks = [ checkpoint ]
         
         # Experiment Callback
@@ -144,7 +144,10 @@ class Experiment:
         if 'train' not in self.conf['results']:
             self.conf['results']['train'] = {}
         self.conf['results']['train'][model] = hist.history
-
+        
+        # Reload best weights
+        self.models[model].load_weights(self.conf['models'][model]['weights'])
+        
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
         # Execute on all models if model is not specified
@@ -203,6 +206,6 @@ class Experiment:
         print('Model %s, Experiment %s results:' % (model, experiment))
         print(results)
         
-    def run(self):
+    def run(self, exec_every_epoch=False):
         self.preprocess()
-        self.train(exec_every_epoch=True)
+        self.train(exec_every_epoch=exec_every_epoch)

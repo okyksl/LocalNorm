@@ -5,7 +5,8 @@ from visualize import visualize
 
 def run(path):
     experiment = Experiment(path=path)
-    experiment.run()
+    experiment.run(exec_every_epoch=False)
+    experiment.execute()
     experiment.save()
     visualize(experiment.conf['results'])
 
