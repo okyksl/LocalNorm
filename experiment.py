@@ -136,7 +136,7 @@ class Experiment:
         self.conf['models'][model]['weights'] = os.path.join(self.directory, 'weights-' + model + '.h5')
         
         # Save Model Def Path
-        self.conf['models'][model]['path'] = os.path.join(self.directory, 'model-' + model + '.h5')
+        self.conf['models'][model]['path'] = os.path.join(self.directory, 'model-' + model + '.json')
         
         # Save Results
         if 'results' not in self.conf:
@@ -144,7 +144,7 @@ class Experiment:
         if 'train' not in self.conf['results']:
             self.conf['results']['train'] = {}
         self.conf['results']['train'][model] = hist.history
-       
+
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
         # Execute on all models if model is not specified
