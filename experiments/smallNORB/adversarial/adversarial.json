@@ -25,7 +25,7 @@
     },
     "train_conf": {
         "learning_rate": 0.0001,
-        "epochs": 100,
+        "epochs": 30,
         "data_split": {
             "train": 8,
             "val": 1,
@@ -40,11 +40,6 @@
         "fgm": {
             "adversarial": {
                 "attack": "fgm"
-            }
-        },
-        "pgd": {
-            "adversarial": {
-                "attack": "pgd"
             }
         }
     }
