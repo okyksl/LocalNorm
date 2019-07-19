@@ -42,7 +42,7 @@ def evaluate_model(model, test_data, batch_size=32, group_size=8, eval_type='bat
     elif eval_type == 'voting':
         preds_y = []
         for i in range(len(test_x) // group_size):
-            input_x = np.repeat(test_x[i*group_size:(i+1)*group_size], batch_size // group_size, axis=0)
+            input_x = np.tile(test_x[i*group_size:(i+1)*group_size], (batch_size // group_size, 1, 1, 1))
             preds = model.predict(input_x, batch_size=batch_size)
             for j in range(group_size):
                 preds_y.append( vote(preds[j::group_size], classes) )
