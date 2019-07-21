@@ -7,6 +7,7 @@ import keras.backend as K
 from keras.callbacks import ModelCheckpoint, LambdaCallback
 from keras.optimizers import SGD
 
+from datasets.generators import AugmenterSequence
 from evaluate import evaluate_model
 from utils import init_dataset, init_model, init_attack
 
@@ -23,10 +24,10 @@ class Experiment:
             self.conf = json.load(f)
             
             self.name = self.conf['name']
-            self.dataset = init_dataset(self.conf['dataset'])
+            self.dataset = init_dataset(self.conf['dataset']['class'], self.conf['dataset']['path'])
             self.models = {}
             for model in self.conf['models']:
-                self.models[model] = init_model(self.conf['models'][model], self.conf['dataset'])
+                self.models[model] = init_model(self.conf['models'][model], self.dataset.input_shape, self.dataset.nb_classes)
             
     # Save experiment configurations to a directory
     def save(self, path=None):
@@ -34,7 +35,7 @@ class Experiment:
             path = self.path
 
         with open(path, 'w') as f:
-            json.dump(self.conf, f)
+            json.dumps(self.conf, f)
     
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
@@ -45,20 +46,11 @@ class Experiment:
             data_params = {}
         
         # Get data
-        data = self.dataset.process(dataset, data_params)
-
-        # Clip overflow
         batch_size = self.conf['models'][model]['batch_size']
-        data_len = (len(data[0]) // batch_size) * batch_size
-        data = ( data[0][:data_len], data[1][:data_len] )
-        
-        # Shuffle data
-        indices = np.arange(data_len)
-        np.random.shuffle(indices)
-        data = ( data[0][indices], data[1][indices] )
+        generator = self.dataset.generator(dataset, batch_size, params=data_params)
         
         # Apply adversarial attack
-        if 'adversarial' in data_conf:
+        if 'adversarial' in data_conf:            
             adv_conf = data_conf['adversarial']
             if 'params' in adv_conf:
                 adv_params = adv_conf['params']
@@ -67,22 +59,19 @@ class Experiment:
                 
             attack = init_attack(self.models[model], adv_conf['attack'])
             
-            # Generate adversarial samples batch by batch
-            data_x = []
-            for i in range( data_len // batch_size ):
-                batch_x = data[0][i*batch_size:(i+1)*batch_size]
-                data_x.append( attack.generate_np(batch_x, **adv_params) )
-                
-            data_x = np.concatenate(data_x)
-            return (data_x, data[1])
+            def gen_augmenter(attack, params):
+                def adv_augment(x):
+                    return attack.generate_np(x, **adv_params)
+                return adv_augment
+            
+            return AugmenterSequence(generator, gen_augmenter(attack, adv_params))
         else:
-            return data
+            return generator
     
     # Preprocess before training/evaluating
     def preprocess(self):
-        # Split dataset
-        data_split = self.conf['train_conf']['data_split']
-        self.dataset.split(data_split)
+        # Process if dataset needs to be processed
+        self.dataset.process(self.conf['dataset']['path'])
         
     # Train the model according to configurations
     def train(self, model=None, exec_every_epoch=False):
@@ -92,8 +81,8 @@ class Experiment:
             return
         
         # Hyperparams
-        train_conf = self.conf['train_conf']
-        data_conf = train_conf['data_conf']
+        train_conf = self.conf['training']
+        data_conf = train_conf['data']
         
         batch_size = self.conf['models'][model]['batch_size']
         group_size = self.conf['models'][model]['group_size']
@@ -101,8 +90,8 @@ class Experiment:
         learning_rate = train_conf['learning_rate']
         
         # Data
-        train_x, train_y = self.prepare(model=model, dataset='train', data_conf=data_conf)        
-        val_data = self.prepare(model=model, dataset='val', data_conf=data_conf)
+        train_gen = self.prepare(model=model, dataset='train', data_conf=data_conf)        
+        val_gen = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
         # Checkpoint
         checkpoint = ModelCheckpoint( os.path.join(self.directory, 'weights-' + model + '.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max', period=1)
@@ -119,12 +108,10 @@ class Experiment:
         self.models[model].compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     
         # Train
-        hist = self.models[model].fit(
-            x=train_x,
-            y=train_y,
-            batch_size=batch_size,
+        hist = self.models[model].fit_generator(
+            train_gen,
             epochs=epochs,
-            validation_data=val_data,
+            validation_data=val_gen,
             callbacks=callbacks
         )
         
@@ -139,11 +126,9 @@ class Experiment:
         self.conf['models'][model]['path'] = os.path.join(self.directory, 'model-' + model + '.json')
         
         # Save Results
-        if 'results' not in self.conf:
-            self.conf['results'] = {}
-        if 'train' not in self.conf['results']:
-            self.conf['results']['train'] = {}
-        self.conf['results']['train'][model] = hist.history
+        if 'training_results' not in self.conf:
+            self.conf['training_results'] = {}
+        self.conf['training_results'][model] = hist.history
         
         # Reload best weights
         self.models[model].load_weights(self.conf['models'][model]['weights'])
@@ -175,7 +160,7 @@ class Experiment:
 
         # Data
         experiment_conf = self.conf['experiments'][experiment]        
-        test_data = self.prepare(model=model, dataset='test', data_conf=experiment_conf)
+        exp_gen = self.prepare(model=model, dataset='test', data_conf=experiment_conf)
         
         # Evaluate
         eval_types = self.conf['models'][model]['eval']
@@ -183,7 +168,7 @@ class Experiment:
         for eval_type in eval_types:
             print('Model %s, Experiment %s, Eval %s is executing...' % (model, experiment, eval_type))
             results[eval_type] = evaluate_model(self.models[model],
-                                                test_data=test_data,
+                                                exp_gen,
                                                 batch_size=batch_size,
                                                 group_size=group_size,
                                                 eval_type=eval_type)

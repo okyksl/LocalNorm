@@ -7,12 +7,12 @@ from keras.optimizers import SGD
 from keras.models import model_from_json
 
 from models.vgg import build_vgg
-from datasets.smallNORB import smallNORB
+from datasets import smallNORB
 
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.attacks import ProjectedGradientDescent, FastGradientMethod
 
-def init_model(model_conf, dataset_conf):
+def init_model(model_conf, input_shape, nb_classes):
     if 'path' in model_conf:
         model = model_from_json(model_conf['path'])
         
@@ -21,10 +21,8 @@ def init_model(model_conf, dataset_conf):
         return model
     
     if 'class' in model_conf:
-        if model_conf['class'] == 'vgg':
-            name = dataset_conf['name']
-            nb_classes = dataset_conf['nb_classes']
-            input_shape = dataset_conf['input_shape']
+        if model_conf['class'] == 'vgg':            
+            name = model_conf['name']
             batch_size = model_conf['batch_size']
             group_size = model_conf['group_size']
             norm_type = model_conf['norm_type']
@@ -32,9 +30,9 @@ def init_model(model_conf, dataset_conf):
     
     raise('Model is not supported')
     
-def init_dataset(dataset_conf):
-    if dataset_conf['name'] == 'smallNORB':
-        return smallNORB()
+def init_dataset(cls, path):
+    if cls == 'smallNORB':
+        return smallNORB.from_json(path)
     
     raise('Dataset is not supported')
     

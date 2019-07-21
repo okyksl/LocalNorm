@@ -1,9 +1,8 @@
 {
     "name": "Adversarial Robustness Test",
     "dataset": {
-        "name": "smallNORB",
-        "input_shape": [96, 96, 1],
-        "nb_classes": 5
+        "class": "smallNORB",
+        "path": "datasets/smallNORB/dataset.json"
     },
     "models": {
         "batch": {
@@ -23,20 +22,13 @@
             "eval": [ "single", "single-voting", "voting", "batch" ]
         }
     },
-    "train_conf": {
+    "training": {
         "learning_rate": 0.0001,
-        "epochs": 30,
-        "data_split": {
-            "train": 8,
-            "val": 1,
-            "test": 1
-        },
-        "data_conf": {
-        }
+        "epochs": 100,
+        "data": {}
     },
     "experiments": {
-        "test": {
-        },
+        "test": {},
         "fgm": {
             "adversarial": {
                 "attack": "fgm"

@@ -15,41 +15,63 @@ def evaluate_preds(true_y, preds_y):
     preds_y = K.variable(preds_y)
     return K.eval(K.mean(categorical_accuracy(true_y, preds_y)))
 
-def evaluate_model(model, test_data, batch_size=32, group_size=8, eval_type='batch', group=0):
-    test_x, test_y = test_data
-    classes = test_y.shape[-1]
-    
+def evaluate_model(model, generator, batch_size=32, group_size=8, eval_type='batch', group=0):
+    true_y = []
+    preds_y = []
+    iterator = iter(generator)
+
     if eval_type == 'single':
-        preds_y = []
-        for i in range(len(test_x)):
-            input_x = np.repeat(test_x[i][np.newaxis, ...], batch_size, axis=0)
-            preds = model.predict(input_x, batch_size=batch_size)
-            preds_y.append( preds[group * group_size] )
+        for i in range(len(generator)):
+            batch_x, batch_y = next(iterator)
+            true_y.append(batch_y)
+
+            for j in range(len(batch_x)):
+                input_x = np.repeat(batch_x[j][np.newaxis, ...], batch_size, axis=0)
+                preds = model.predict(input_x, batch_size=batch_size)
+                preds_y.append( preds[group * group_size] )
             
+        true_y = np.concatenate(true_y)
         preds_y = np.stack(preds_y)
-        return evaluate_preds(test_y, preds_y)
+        return evaluate_preds(true_y, preds_y)
     
     elif eval_type == 'single-voting':
-        preds_y = []
-        for i in range(len(test_x)):
-            input_x = np.repeat(test_x[i][np.newaxis, ...], batch_size, axis=0)
-            preds = model.predict(input_x, batch_size=batch_size)
-            preds_y.append( vote(preds, classes) )
-            
+        for i in range(len(generator)):
+            batch_x, batch_y = next(iterator)
+            true_y.append(batch_y)
+
+            for j in range(len(batch_x)):
+                input_x = np.repeat(batch_x[j][np.newaxis, ...], batch_size, axis=0)
+                preds = model.predict(input_x, batch_size=batch_size)
+                preds_y.append( vote(preds, batch_y.shape[-1]) )
+
+        true_y = np.concatenate(true_y)
         preds_y = np.stack(preds_y)
-        return evaluate_preds(test_y, preds_y)
+        return evaluate_preds(true_y, preds_y)
         
     elif eval_type == 'voting':
-        preds_y = []
-        for i in range(len(test_x) // group_size):
-            input_x = np.tile(test_x[i*group_size:(i+1)*group_size], (batch_size // group_size, 1, 1, 1))
-            preds = model.predict(input_x, batch_size=batch_size)
-            for j in range(group_size):
-                preds_y.append( vote(preds[j::group_size], classes) )
-            
+        for i in range(len(generator)):
+            batch_x, batch_y = next(iterator)
+            true_y.append(batch_y)
+   
+            for j in range(len(batch_x) // group_size):
+                input_x = np.tile(batch_x[j*group_size:(j+1)*group_size], (batch_size // group_size, 1, 1, 1))
+                preds = model.predict(input_x, batch_size=batch_size)
+
+                for k in range(group_size):
+                    preds_y.append( vote(preds[k::group_size], batch_y.shape[-1]) )
+
+        true_y = np.concatenate(true_y)
         preds_y = np.stack(preds_y)
-        return evaluate_preds(test_y, preds_y)
+        return evaluate_preds(true_y, preds_y)
     
     else: # 'batch' - default
-        preds_y = model.predict(test_x, batch_size=batch_size)
-        return evaluate_preds(test_y, preds_y)
+        for i in range(len(generator)):
+            batch_x, batch_y = next(iterator)
+            true_y.append(batch_y)
+
+            preds = model.predict(batch_x, batch_size=batch_size)
+            preds_y.append(preds)
+
+        true_y = np.concatenate(true_y)
+        preds_y = np.concatenate(preds_y)
+        return evaluate_preds(true_y, preds_y)
