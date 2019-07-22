@@ -35,7 +35,7 @@ class Experiment:
             path = self.path
 
         with open(path, 'w') as f:
-            json.dumps(self.conf, f)
+            json.dump(self.conf, f, indent=4)
     
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
@@ -94,7 +94,7 @@ class Experiment:
         val_gen = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
         # Checkpoint
-        checkpoint = ModelCheckpoint( os.path.join(self.directory, 'weights-' + model + '.h5'), monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max', period=1)
+        checkpoint = ModelCheckpoint( os.path.join(self.directory, model + '_{epoch:02d}_{val_acc:.4f}.h5'), monitor='val_acc', verbose=1, save_best_only=False, save_weights_only=False, mode='max', period=1)
         callbacks = [ checkpoint ]
         
         # Experiment Callback
@@ -118,20 +118,11 @@ class Experiment:
         # Save Model Def
         with open( os.path.join(self.directory, 'model-' + model + '.json'), 'w') as f:
             f.write(self.models[model].to_json())
-            
-        # Save Weight Path
-        self.conf['models'][model]['weights'] = os.path.join(self.directory, 'weights-' + model + '.h5')
-        
-        # Save Model Def Path
-        self.conf['models'][model]['path'] = os.path.join(self.directory, 'model-' + model + '.json')
-        
+
         # Save Results
-        if 'training_results' not in self.conf:
-            self.conf['training_results'] = {}
-        self.conf['training_results'][model] = hist.history
-        
-        # Reload best weights
-        self.models[model].load_weights(self.conf['models'][model]['weights'])
+        if 'training_history' not in self.conf:
+            self.conf['training_history'] = {}
+        self.conf['training_history'][model] = hist.history
         
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
