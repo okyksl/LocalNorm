@@ -4,7 +4,7 @@ import json
 import numpy as np
 import keras.backend as K
 
-from keras.callbacks import ModelCheckpoint, LambdaCallback
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, LambdaCallback
 from keras.optimizers import SGD
 
 from datasets.generators import AugmenterSequence
@@ -93,9 +93,12 @@ class Experiment:
         train_gen = self.prepare(model=model, dataset='train', data_conf=data_conf)        
         val_gen = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
-        # Checkpoint
-        checkpoint = ModelCheckpoint( os.path.join(self.directory, model + '_{epoch:02d}_{val_acc:.4f}.h5'), monitor='val_acc', verbose=1, save_best_only=False, save_weights_only=False, mode='max', period=1)
-        callbacks = [ checkpoint ]
+        # Callbacks
+        output_file = os.path.join(self.directory, model + '_{epoch:02d}_{val_acc:.4f}.h5')
+        checkpoint = ModelCheckpoint(output_file, monitor='val_acc', period=1, verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20, restore_best_weights=True, verbose=1)
+        lr_regularizer = ReduceLROnPlateau(monitor='val_loss', min_delta=0.001, factor=0.5, patience=5, verbose=1)
+        callbacks = [ checkpoint, early_stopping, lr_regularizer ]
         
         # Experiment Callback
         if exec_every_epoch:
@@ -120,9 +123,14 @@ class Experiment:
             f.write(self.models[model].to_json())
 
         # Save Results
+        history = hist.history
+        if 'lr' in history:
+            for i in range(len(history['lr'])):
+                history['lr'][i] = float(history['lr'][i]) # Convert numpy float to regular float
+
         if 'training_history' not in self.conf:
             self.conf['training_history'] = {}
-        self.conf['training_history'][model] = hist.history
+        self.conf['training_history'][model] = history
         
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
