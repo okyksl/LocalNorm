@@ -26,9 +26,11 @@ class Experiment:
             self.name = self.conf['name']
             self.dataset = init_dataset(self.conf['dataset']['class'], self.conf['dataset']['path'])
             self.models = {}
+            self.epochs = {}
             for model in self.conf['models']:
                 self.models[model] = init_model(self.conf['models'][model], self.dataset.input_shape, self.dataset.nb_classes)
-            
+                self.epochs[model] = 0
+
     # Save experiment configurations to a directory
     def save(self, path=None):
         if path is None:
@@ -57,7 +59,12 @@ class Experiment:
         for file in os.listdir(self.directory):
             if file.startswith(prefix) and file.endswith('.h5'):
                 self.models[model].load_weights(os.path.join(self.directory, file))
+                self.register(model, epoch)
                 break
+    
+    # Register model epoch
+    def register(self, model, epoch):
+        self.epochs[model] = epoch
     
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
@@ -124,7 +131,9 @@ class Experiment:
         checkpoint = ModelCheckpoint(output_file, monitor='val_acc', period=1, verbose=1)
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20, restore_best_weights=True, verbose=1)
         lr_regularizer = ReduceLROnPlateau(monitor='val_loss', min_delta=0.001, factor=0.5, patience=5, verbose=1)
-        callbacks = [ checkpoint, early_stopping, lr_regularizer ]
+        epoch_callback = LambdaCallback(
+            on_epoch_end=lambda epoch,logs: self.register(model, epoch)) # update epoch
+        callbacks = [ checkpoint, early_stopping, lr_regularizer, epoch_callback ]
         
         # Experiment Callback
         if exec_every_epoch:
@@ -143,6 +152,7 @@ class Experiment:
             validation_data=val_gen,
             callbacks=callbacks
         )
+        self.register(model, early_stopping.stopped_epoch) # restore best epoch
         
         # Save Model Def
         with open( os.path.join(self.directory, 'model-' + model + '.json'), 'w') as f:
@@ -175,10 +185,7 @@ class Experiment:
         # Get experiment config if not specified
         if experiment_conf is not None:
             self.conf['experiments'][experiment] = experiment_conf
-       
-        # Print Experiment Start
-        print('Model %s, Experiment %s is executing...' % (model, experiment))
-        
+
         # Hyperparams
         batch_size = self.conf['models'][model]['batch_size']
         group_size = self.conf['models'][model]['group_size']
@@ -197,7 +204,6 @@ class Experiment:
                                                 batch_size=batch_size,
                                                 group_size=group_size,
                                                 eval_type=eval_type)
-            print('Model %s, Experiment %s, Eval %s results: ' % (model, experiment, eval_type))
             print(results[eval_type])
 
         # Save Results
@@ -209,8 +215,8 @@ class Experiment:
             self.conf['results'][experiment][model] = {}
         for res in results:
             if res not in self.conf['results'][experiment][model]:
-                self.conf['results'][experiment][model][res] = { 'acc': [] }
-            self.conf['results'][experiment][model][res]['acc'].append(float(results[res]))
+                self.conf['results'][experiment][model][res] = {}
+            self.conf['results'][experiment][model][res][str(self.epochs[model])] = float(results[res])
         
         # Print Results
         print('Model %s, Experiment %s results:' % (model, experiment))
@@ -219,3 +225,5 @@ class Experiment:
     def run(self, exec_every_epoch=False):
         self.preprocess()
         self.train(exec_every_epoch=exec_every_epoch)
+        if not exec_every_epoch:
+            self.execute()
