@@ -1,6 +1,6 @@
 {
     "name": "smallNORB Dataset",
-    "status": "init",
+    "status": "download",
     "split": {
         "sets": [
             "train",
@@ -8,9 +8,9 @@
             "test"
         ],
         "ratios": [
-            0.8,
-            0.1,
-            0.1
+            0.6,
+            0.2,
+            0.2
         ]
     },
     "paths": {
