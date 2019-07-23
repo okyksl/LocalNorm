@@ -37,6 +37,28 @@ class Experiment:
         with open(path, 'w') as f:
             json.dump(self.conf, f, indent=4)
     
+    # Restore models from desired batch
+    def restore(self, model=None, epoch=0):
+        if model is None:
+            for model in self.models:
+                self.restore(model=model, epoch=epoch)
+            return
+        
+        if epoch == 0: # Get best result
+            score = 0
+            for file in os.listdir(self.directory):
+                if file.startswith(model) and file.endswith('.h5'):
+                    sc = float(file[-9:-3])
+                    if sc > score:
+                        epoch = int(file[-12:-10])
+                        score = sc
+
+        prefix = '%s_%02d' % (model, epoch)
+        for file in os.listdir(self.directory):
+            if file.startswith(prefix) and file.endswith('.h5'):
+                self.models[model].load_weights(os.path.join(self.directory, file))
+                break
+    
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
         # Extract params
