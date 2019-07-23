@@ -78,8 +78,12 @@ class Experiment:
                 adv_params = adv_conf['params']
             else:
                 adv_params = {}
-                
-            attack = init_attack(self.models[model], adv_conf['attack'])
+            if 'model' in adv_conf:
+                adv_model = adv_conf['model']
+            else:
+                adv_model = model
+
+            attack = init_attack(self.models[adv_model], adv_conf['attack'])
             
             def gen_augmenter(attack, params):
                 def adv_augment(x):

@@ -29,9 +29,16 @@
     },
     "experiments": {
         "test": {},
-        "fgm": {
+        "batch_fgm": {
             "adversarial": {
-                "attack": "fgm"
+                "attack": "fgm",
+                "model": "batch"
+            }
+        },
+        "local_fgm": {
+            "adversarial": {
+                "attack": "fgm",
+                "model": "local"
             }
         }
     }
