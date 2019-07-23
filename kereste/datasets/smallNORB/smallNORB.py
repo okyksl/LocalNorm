@@ -15,9 +15,14 @@ class smallNORB(Dataset):
     input_shape = (96, 96, 1)
 
     @staticmethod
-    def download(download_path):
-        # TODO: run shell script to download dataset & dependencies
-        raise NotImplementedError
+    def download(download_path, download_dependency=True):
+        if download_dependency:
+            script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dependency.sh')
+            dependency_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'small_norb')
+            os.system('sh %s %s' % (script_path, dependency_path))
+            
+        script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'download.sh')
+        os.system('sh %s %s' % (script_path, download_path))
 
     @staticmethod
     def init(data_path, download_path):
@@ -86,8 +91,7 @@ class smallNORB(Dataset):
 
         download_path = os.path.join(dataset_dir, conf['paths']['download'])
         if conf['status'] == 'download':
-            raw_path = os.path.join(dataset_dir, conf['path']['download'])
-            self.download(download_path)
+            smallNORB.download(download_path)
             conf['status'] = 'init'
 
         data_path = os.path.join(dataset_dir, conf['paths']['data'])

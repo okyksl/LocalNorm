@@ -4,12 +4,12 @@ import json
 import numpy as np
 import keras.backend as K
 
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, LambdaCallback
 from keras.optimizers import SGD
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, LambdaCallback
 
-from datasets.generators import AugmenterSequence
-from evaluate import evaluate_model
-from utils import init_dataset, init_model, init_attack
+from .evaluate import evaluate_model
+from .utils import init_dataset, init_model, init_attack
+from .datasets.generators import AugmenterSequence
 
 class Experiment:
     def __init__(self, path=None):
@@ -65,7 +65,7 @@ class Experiment:
     # Register model epoch
     def register(self, model, epoch):
         self.epochs[model] = epoch
-    
+
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
         # Extract params

@@ -1,6 +1,6 @@
 import argparse
 
-from experiment import Experiment
+from kereste import Experiment
 from visualize import visualize
 
 def run(path):

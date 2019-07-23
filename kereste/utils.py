@@ -6,20 +6,13 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateSchedule
 from keras.optimizers import SGD
 from keras.models import model_from_json
 
-from models.vgg import build_vgg
-from datasets import smallNORB
-
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.attacks import ProjectedGradientDescent, FastGradientMethod
 
+from .models.vgg import build_vgg
+from .datasets import smallNORB
+
 def init_model(model_conf, input_shape, nb_classes):
-    if 'path' in model_conf:
-        model = model_from_json(model_conf['path'])
-        
-        if 'weights' in model_conf:
-            model.load_weights(model_conf['weights'])
-        return model
-    
     if 'class' in model_conf:
         if model_conf['class'] == 'vgg':            
             name = model_conf['name']
@@ -30,8 +23,8 @@ def init_model(model_conf, input_shape, nb_classes):
     
     raise('Model is not supported')
     
-def init_dataset(cls, path):
-    if cls == 'smallNORB':
+def init_dataset(dataset, path):
+    if dataset == 'smallNORB':
         return smallNORB.from_json(path)
     
     raise('Dataset is not supported')
