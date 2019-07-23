@@ -94,7 +94,7 @@ class Experiment:
             
             def gen_augmenter(attack, params):
                 def adv_augment(x):
-                    return attack.generate_np(x, **adv_params)
+                    return attack.generate_np(x, **params)
                 return adv_augment
             
             return AugmenterSequence(generator, gen_augmenter(attack, adv_params))

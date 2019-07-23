@@ -6,8 +6,8 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateSchedule
 from keras.optimizers import SGD
 from keras.models import model_from_json
 
+import cleverhans.attacks
 from cleverhans.utils_keras import KerasModelWrapper
-from cleverhans.attacks import ProjectedGradientDescent, FastGradientMethod
 
 from .models.vgg import build_vgg
 from .datasets import smallNORB
@@ -32,9 +32,5 @@ def init_dataset(dataset, path):
 def init_attack(model, attack):
     wrap = KerasModelWrapper(model)
     sess = K.get_session()
-    if attack == 'pgd':
-        return ProjectedGradientDescent(wrap, sess=sess)
-    elif attack == 'fgm':
-        return FastGradientMethod(wrap, sess=sess)
-    
-    raise('Adversarial attack is not supported')
+    attack = getattr(cleverhans.attacks, attack)
+    return attack(wrap, sess)
