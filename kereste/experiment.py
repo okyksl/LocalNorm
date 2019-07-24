@@ -14,27 +14,44 @@ from .datasets.generators import AugmenterSequence
 class Experiment:
     def __init__(self, path=None):
         if path is not None:
-            self.load(path)
+            self.path = path
+            self.directory = os.path.dirname(path)
+            with open(path) as f:
+                self.load( json.load(f) )
         
     # Load experiment configurations from a directory
-    def load(self, path):
-        self.path = path
-        self.directory = os.path.dirname(path)
-        with open(path) as f:
-            self.conf = json.load(f)
+    def load(self, conf):
+        self.conf = conf
+
+        self.name = self.conf['name']
+        self.dataset = init_dataset(self.conf['dataset']['class'], self.conf['dataset']['path'])
+        self.models = {}
+        self.epochs = {}
+        for model in self.conf['models']:
+            self.models[model] = init_model(self.conf['models'][model], self.dataset.input_shape, self.dataset.nb_classes)
+            self.epochs[model] = 0
             
-            self.name = self.conf['name']
-            self.dataset = init_dataset(self.conf['dataset']['class'], self.conf['dataset']['path'])
-            self.models = {}
-            self.epochs = {}
-            for model in self.conf['models']:
-                self.models[model] = init_model(self.conf['models'][model], self.dataset.input_shape, self.dataset.nb_classes)
-                self.epochs[model] = 0
+        # TODO: Find a better data structure + data storage mechanism
+        # Cast data types coming from json to desired data types
+        for experiment in self.conf['experiments']:
+            if ('adversarial' in self.conf['experiments'][experiment] and
+                'params' in self.conf['experiments'][experiment]['adversarial'] and
+                'eps' in self.conf['experiments'][experiment]['adversarial']['params']):
+                self.conf['experiments'][experiment]['adversarial']['params']['eps'] = np.float32(
+                    self.conf['experiments'][experiment]['adversarial']['params']['eps'])
 
     # Save experiment configurations to a directory
     def save(self, path=None):
         if path is None:
             path = self.path
+
+       # Cast data types to json format
+        for experiment in self.conf['experiments']:
+            if ('adversarial' in self.conf['experiments'][experiment] and
+                'params' in self.conf['experiments'][experiment]['adversarial'] and
+                'eps' in self.conf['experiments'][experiment]['adversarial']['params']):
+                self.conf['experiments'][experiment]['adversarial']['params']['eps'] = float(
+                    self.conf['experiments'][experiment]['adversarial']['params']['eps'])
 
         with open(path, 'w') as f:
             json.dump(self.conf, f, indent=4)
