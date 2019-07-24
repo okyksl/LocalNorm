@@ -57,21 +57,35 @@ class Experiment:
             json.dump(self.conf, f, indent=4)
     
     # Restore models from desired batch
-    def restore(self, model=None, epoch=0):
+    def restore(self, model=None, metric='val_loss', mode='auto', epoch=None):
         if model is None:
             for model in self.models:
-                self.restore(model=model, epoch=epoch)
+                self.restore(model=model, metric=metric, mode=mode, epoch=epoch)
             return
         
-        if epoch == 0: # Get best result
-            score = 0
-            for file in os.listdir(self.directory):
-                if file.startswith(model) and file.endswith('.h5'):
-                    sc = float(file[-9:-3])
-                    if sc > score:
-                        epoch = int(file[-12:-10])
-                        score = sc
+        if epoch is None: # Extract best epoch for the metric
+            if ('training_history' in self.conf and model in self.conf['training_history'] and
+                metric in self.conf['training_history'][model]):
+                if mode == 'auto':
+                    if metric[-4:] == 'loss':
+                        mode = 'min'
+                    elif metric[-3:] == 'acc':
+                        mode = 'max'
+                    else:
+                        print('Can\'t decide on mode to use')
+                        return
 
+                best = None
+                for i in range(len(self.conf['training_history'][model][metric])):
+                    score = self.conf['training_history'][model][metric][i]
+                    if (best is None) or (mode == 'min' and score < best) or (mode == 'max' and score > best):
+                        epoch = i+1
+                        best = score
+            else:
+                print('No history of %s of %s' % (metric, model))
+                return
+            
+            
         prefix = '%s_%02d' % (model, epoch)
         for file in os.listdir(self.directory):
             if file.startswith(prefix) and file.endswith('.h5'):
@@ -144,7 +158,7 @@ class Experiment:
         val_gen = self.prepare(model=model, dataset='val', data_conf=data_conf)
 
         # Callbacks
-        output_file = os.path.join(self.directory, model + '_{epoch:02d}_{val_acc:.4f}.h5')
+        output_file = os.path.join(self.directory, model + '_{epoch:02d}.h5')
         checkpoint = ModelCheckpoint(output_file, monitor='val_acc', period=1, verbose=1)
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20, restore_best_weights=True, verbose=1)
         lr_regularizer = ReduceLROnPlateau(monitor='val_loss', min_delta=0.001, factor=0.5, patience=5, verbose=1)
