@@ -138,7 +138,10 @@ class Experiment:
         self.dataset.process(self.conf['dataset']['path'])
         
     # Train the model according to configurations
-    def train(self, model=None, exec_every_epoch=False):
+    def train(self, model=None):
+        # Set train phase
+        K.set_learning_phase(1)
+        
         if model is None:
             for model in self.models:
                 self.train(model=model, exec_every_epoch=exec_every_epoch)
@@ -165,12 +168,6 @@ class Experiment:
         epoch_callback = LambdaCallback(
             on_epoch_end=lambda epoch,logs: self.register(model, epoch)) # update epoch
         callbacks = [ checkpoint, early_stopping, lr_regularizer, epoch_callback ]
-        
-        # Experiment Callback
-        if exec_every_epoch:
-            experiment_callback = LambdaCallback(
-                on_epoch_end=lambda epoch,logs: self.execute(model=model))
-            callbacks = callbacks + [ experiment_callback ]
         
         # Compile
         optimizer = SGD(lr=learning_rate, momentum=0.9)
@@ -201,6 +198,9 @@ class Experiment:
         
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
+        # Set test phase
+        K.set_learning_phase(0)
+        
         # Execute on all models if model is not specified
         if model is None:
             for model in self.models:
@@ -253,8 +253,8 @@ class Experiment:
         print('Model %s, Experiment %s results:' % (model, experiment))
         print(results)
         
-    def run(self, exec_every_epoch=False):
+    def run(self):
         self.preprocess()
-        self.train(exec_every_epoch=exec_every_epoch)
-        if not exec_every_epoch:
-            self.execute()
+        self.train()
+        self.execute()
+        self.save()
