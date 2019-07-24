@@ -156,6 +156,11 @@ class Experiment:
         epochs = train_conf['epochs']
         learning_rate = train_conf['learning_rate']
         
+        # Resume training if epochs are stated
+        initial_epoch = self.epochs[model]
+        if initial_epoch > 0:
+            learning_rate = self.conf['training_history'][model]['lr'][initial_epoch-1]
+
         # Data
         train_gen = self.prepare(model=model, dataset='train', data_conf=data_conf)        
         val_gen = self.prepare(model=model, dataset='val', data_conf=data_conf)
@@ -177,6 +182,7 @@ class Experiment:
         hist = self.models[model].fit_generator(
             train_gen,
             epochs=epochs,
+            initial_epoch=initial_epoch,
             validation_data=val_gen,
             callbacks=callbacks
         )
@@ -194,7 +200,12 @@ class Experiment:
 
         if 'training_history' not in self.conf:
             self.conf['training_history'] = {}
-        self.conf['training_history'][model] = history
+        if model in self.conf['training_history']:
+            for metric in history:
+                metric_history = self.conf['training_history'][model][metric][:initial_epoch] + history[metric]
+                self.conf['training_history'][model][metric] = metric_history
+        else:
+            self.conf['training_history'][model] = history
         
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
