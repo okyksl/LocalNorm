@@ -56,5 +56,5 @@ class Dataset(ABC):
         raise NotImplementedError
         
     @abstractmethod
-    def generator(self, dataset, batch_size, crop_offset=True, params={}):
+    def generator(self, dataset, batch_size, crop_offset=True, normalize=False, params={}):
         raise NotImplementedError

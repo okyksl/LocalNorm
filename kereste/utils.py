@@ -14,12 +14,8 @@ from .datasets import smallNORB
 
 def init_model(model_conf, input_shape, nb_classes):
     if 'class' in model_conf:
-        if model_conf['class'] == 'vgg':            
-            name = model_conf['name']
-            batch_size = model_conf['batch_size']
-            group_size = model_conf['group_size']
-            norm_type = model_conf['norm_type']
-            return build_vgg(name=name, input_shape=input_shape, norm_type=norm_type, batch_size=batch_size, group_size=group_size, nb_classes=nb_classes)
+        if model_conf['class'] == 'vgg':
+            return build_vgg(input_shape=input_shape, nb_classes=nb_classes, **model_conf)
     
     raise('Model is not supported')
     

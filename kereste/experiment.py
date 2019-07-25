@@ -99,15 +99,24 @@ class Experiment:
 
     # Prepare data according to configurations
     def prepare(self, model, dataset, data_conf):
-        # Extract params
+        # Extract data params
         if 'params' in data_conf:
             data_params = data_conf['params']
         else:
             data_params = {}
+
+        # Extract preprocessing attributes
+        if ('preprocess' in self.conf and model in self.conf['preprocess'] and
+            'normalize' in self.conf['preprocess'][model]):
+            normalize = self.conf['preprocess'][model]['normalize']
+        else:
+            normalize = False
         
-        # Get data
+        # Extract batch size
         batch_size = self.conf['models'][model]['batch_size']
-        generator = self.dataset.generator(dataset, batch_size, params=data_params)
+
+        # Get data
+        generator = self.dataset.generator(dataset, batch_size, normalize=normalize, params=data_params)
         
         # Apply adversarial attack
         if 'adversarial' in data_conf:            

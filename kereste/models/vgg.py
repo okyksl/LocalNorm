@@ -12,7 +12,7 @@ def norm(norm_type, batch_size=None, groupsize=None):
         return LocalNormalization(axis=0, batch_size=batch_size, groupsize=groupsize)
     return None
 
-def build_vgg(name='vgg', input_shape=(96,96,1,), input_layer=None, nb_classes=5, weight_decay=0.0005, norm_type='batch', batch_size=128, group_size=8):  
+def build_vgg(name='vgg', input_shape=(96,96,1,), input_layer=None, nb_classes=5, weight_decay=0.0005, norm_type='batch', batch_size=128, group_size=8, **kwargs):
     if input_layer is None:
         inputs = Input(shape=input_shape)
     else:

@@ -115,7 +115,7 @@ class smallNORB(Dataset):
 
         return smallNORB(path, conf)
 
-    def generator(self, dataset, batch_size, crop_offset=True, params={}):
+    def generator(self, dataset, batch_size, crop_offset=True, normalize=False, params={}):
         path = os.path.join( os.path.join(self.path, self.conf['paths']['data']), dataset )
 
         x_set = []
@@ -159,4 +159,4 @@ class smallNORB(Dataset):
             y_set = y_set[ :(length // batch_size) * batch_size ]
 
         # Construct sequence out of filtered sets
-        return ImageSequence(x_set, to_categorical(y_set, self.nb_classes), self.input_shape, batch_size)
+        return ImageSequence(x_set, to_categorical(y_set, self.nb_classes), self.input_shape, batch_size, normalize=normalize)
