@@ -148,14 +148,15 @@ class Experiment:
             return
         
         # Hyperparams
-        train_conf = self.conf['training']
+        train_conf = self.conf['training'][model]
+        model_conf = self.conf['models'][model]
         data_conf = train_conf['data']
         
-        batch_size = self.conf['models'][model]['batch_size']
-        group_size = self.conf['models'][model]['group_size']
         epochs = train_conf['epochs']
         learning_rate = train_conf['learning_rate']
-        
+        batch_size = model_conf['batch_size']
+        group_size = model_conf['group_size']
+
         # Resume training if epochs are stated
         initial_epoch = self.epochs[model]
         if initial_epoch > 0:
