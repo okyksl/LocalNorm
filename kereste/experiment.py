@@ -144,7 +144,7 @@ class Experiment:
         
         if model is None:
             for model in self.models:
-                self.train(model=model, exec_every_epoch=exec_every_epoch)
+                self.train(model=model)
             return
         
         # Hyperparams
