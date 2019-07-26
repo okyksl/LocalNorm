@@ -1,0 +1,21 @@
+{
+    "name": "CIFAR10 Dataset",
+    "status": "download",
+    "split": {
+        "sets": [
+            "train",
+            "val",
+            "test"
+        ],
+        "ratios": [
+            0.8,
+            0.1,
+            0.1
+        ]
+    },
+    "paths": {
+        "download": "download/",
+        "data": "data/",
+        "split": "split.json"
+    }
+}

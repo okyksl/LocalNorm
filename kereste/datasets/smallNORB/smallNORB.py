@@ -49,7 +49,7 @@ class smallNORB(Dataset):
 
         if split is None:
             ratios = conf['ratios']
-            ratios = np.asarray(ratios) * instances
+            samples = np.asarray(ratios) * instances
 
             # Generate random ordering of the sets
             order = np.arange(instances)
@@ -60,7 +60,7 @@ class smallNORB(Dataset):
             split = {}
             for i in range(len(sets)):
                 cur = 0
-                while cur < ratios[i]:
+                while cur < samples[i]:
                     """
                     # Add all files in the group to the set
                     for f in groups[order[index]]:
@@ -82,38 +82,6 @@ class smallNORB(Dataset):
                     shutil.move(os.path.join(data_path, f), os.path.join( os.path.join(data_path, split[str(i)]), f ))
                     break
         return split
-
-    @staticmethod
-    def process(path):
-        with open(path) as f:
-            conf = json.load(f)
-        dataset_dir = os.path.dirname(path)
-
-        download_path = os.path.join(dataset_dir, conf['paths']['download'])
-        if conf['status'] == 'download':
-            smallNORB.download(download_path)
-            conf['status'] = 'init'
-
-        data_path = os.path.join(dataset_dir, conf['paths']['data'])
-        if conf['status'] == 'init':
-            smallNORB.init(data_path, download_path)
-            conf['status'] = 'split'
-
-        split_path = os.path.join(dataset_dir, conf['paths']['split'])
-        if conf['status'] == 'split':
-            split = None
-            if os.path.isfile(split_path):
-                with open(split_path) as f:
-                    split = json.load(f)
-
-            split = smallNORB.split(data_path, conf['split'], split)
-            smallNORB.to_json(split_path, split)
-            conf['status'] ='ready'
-
-        if conf['status'] == 'ready':
-            smallNORB.to_json(path, conf)
-
-        return smallNORB(path, conf)
 
     def generator(self, dataset, batch_size, crop_offset=True, normalize=False, params={}):
         path = os.path.join( os.path.join(self.path, self.conf['paths']['data']), dataset )
