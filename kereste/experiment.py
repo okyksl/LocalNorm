@@ -216,7 +216,10 @@ class Experiment:
                 self.conf['training_history'][model][metric] = metric_history
         else:
             self.conf['training_history'][model] = history
-        
+
+        # Save
+        self.save()
+
     # Executes an experiment stated in configuration file
     def execute(self, model=None, experiment=None, experiment_conf=None):
         # Set test phase
@@ -273,7 +276,10 @@ class Experiment:
         # Print Results
         print('Model %s, Experiment %s results:' % (model, experiment))
         print(results)
-        
+
+        # Save
+        self.save()
+
     def run(self):
         self.preprocess()
         self.train()
