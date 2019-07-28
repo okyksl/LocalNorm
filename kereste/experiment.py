@@ -178,7 +178,7 @@ class Experiment:
         # Callbacks
         output_file = os.path.join(self.directory, model + '_{epoch:02d}.h5')
         checkpoint = ModelCheckpoint(output_file, monitor='val_acc', period=1, verbose=1)
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20, restore_best_weights=True, verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20, restore_best_weights=False, verbose=1)
         lr_regularizer = ReduceLROnPlateau(monitor='val_loss', min_delta=0.001, factor=0.5, patience=5, verbose=1)
         epoch_callback = LambdaCallback(
             on_epoch_end=lambda epoch,logs: self.register(model, epoch)) # update epoch
@@ -196,8 +196,8 @@ class Experiment:
             validation_data=val_gen,
             callbacks=callbacks
         )
-        self.register(model, early_stopping.stopped_epoch) # restore best epoch
-        
+        self.restore(model=model) # Restore best epoch
+
         # Save Model Def
         with open( os.path.join(self.directory, 'model-' + model + '.json'), 'w') as f:
             f.write(self.models[model].to_json())
